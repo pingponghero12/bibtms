@@ -22,21 +22,20 @@ Add the script folder to your `.bashrc` or `.zshrc`.
 
 ### 2. Commands
 
-* `bibtms` — Open the whole database in Vim.
-* `bibtms --add` — Add a new paper using a blank template.
+* `bibtms` — Open the whole database in vim.
 * `bibtms -fzf` — Search by title and open one paper.
-* `bibtms --grep <word>` — Search for a specific status, genre, or keyword.
 
 ```
-bibtms --help
-usage: bibtms.py [-h] [--grep GREP] [--key KEY] [--add]
+usage: bibtms.py [-h] [-o] [--genres] [--list-genres] [--grep GREP] [--key KEY] [--add]
 
 options:
-  -h, --help   show this help message and exit
-  --grep GREP  Filter by string
-  --key KEY    Open specific key
-  --add        Add new template
-```
+  -h, --help     show this help message and exit
+  -o, --open     Open raw bib.toml
+  --genres       Browse by genres (Read-Only)
+  --list-genres  Print unique genres
+  --grep GREP    Filter by string
+  --key KEY      Open specific key
+  --add          Add new template
 
 ---
 
