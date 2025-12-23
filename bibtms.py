@@ -4,6 +4,7 @@ import sys
 import argparse
 import tempfile
 import subprocess
+from datetime import datetime
 from tomlkit import parse, dumps
 
 # --- CONFIG LOADING ---
@@ -32,6 +33,53 @@ def save_db(data):
     with open(DB_FILE, "w") as f:
         f.write(dumps(data).strip() + "\n")
 
+def git_sync(file_path):
+    """Checks if file is in a git repo and syncs changes if they exist."""
+    repo_dir = os.path.dirname(os.path.abspath(file_path))
+    file_name = os.path.basename(file_path)
+    
+    # 1. Check if it's a git repo
+    try:
+        is_repo = subprocess.run(
+            ["git", "-C", repo_dir, "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True
+        ).returncode == 0
+    except FileNotFoundError:
+        return # Git not installed
+
+    if not is_repo:
+        return
+
+    # 2. Check for changes specifically in the bib file
+    status = subprocess.run(
+        ["git", "-C", repo_dir, "status", "--porcelain", file_name],
+        capture_output=True, text=True
+    ).stdout.strip()
+
+    if status:
+        print("\nDetected changes, syncing with Git...")
+        date_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+        commit_msg = f"Bibliography update {date_str}"
+        
+        try:
+            # Stage, commit, and push
+            subprocess.run(["git", "-C", repo_dir, "add", file_name], check=True)
+            subprocess.run(["git", "-C", repo_dir, "commit", "-m", commit_msg], check=True)
+            
+            # Use 'push' only if a remote is configured
+            has_remote = subprocess.run(
+                ["git", "-C", repo_dir, "remote"], 
+                capture_output=True, text=True
+            ).stdout.strip()
+            
+            if has_remote:
+                subprocess.run(["git", "-C", repo_dir, "push"], check=True)
+                print(f"Successfully pushed: {commit_msg}")
+            else:
+                print(f"Committed locally: {commit_msg} (No remote found)")
+        except subprocess.CalledProcessError as e:
+            print(f"Git sync failed: {e}")
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--grep", help="Filter by string")
@@ -56,8 +104,8 @@ def main():
     else:
         to_edit_keys = list(db.keys())
 
+    # Build buffer
     buffer_str = "# --- BIBTMS EDIT BUFFER ---\n"
-    
     if args.add:
         buffer_str += "# Fill out the template and save.\n\n"
         buffer_str += '[NEW_KEY]\ntitle = ""\nrating = 0\nabstract = ""\nstatus = "Planned"\nread_count = 0\ncited_in = []\nurl = ""\ngenres = []\nread_time = ""\nbibtex = """\n"""\n'
@@ -69,38 +117,54 @@ def main():
             if papers:
                 buffer_str += f"# {'='*15} {status.upper()} {'='*15}\n"
                 for k in papers:
-                    entry_toml = dumps({k: db[k]}).strip()
-                    buffer_str += entry_toml + "\n\n"
+                    buffer_str += dumps({k: db[k]}).strip() + "\n\n"
                     processed_keys.add(k)
 
+    # Use a temporary file for editing
     with tempfile.NamedTemporaryFile(suffix=".toml", mode="w+", delete=False) as tf:
         tf.write(buffer_str)
         temp_path = tf.name
 
+    # Open editor
     subprocess.call([os.environ.get('EDITOR', 'vim'), temp_path])
 
+    # Read back the data
     with open(temp_path, "r") as f:
-        content = "".join([line for line in f if not line.strip().startswith("#")])
+        # Ignore lines starting with #
+        lines = [line for line in f if not line.strip().startswith("#")]
+        content = "".join(lines)
+        
         if not content.strip(): 
             os.remove(temp_path)
             return 
+            
         try:
             edited_db = parse(content)
         except Exception as e:
-            print(f"TOML Error: {e}")
+            print(f"TOML Error during sync: {e}")
+            os.remove(temp_path)
             sys.exit(1)
 
+    # If not in add mode, check for deletions
     if not args.add:
         for k in to_edit_keys:
             if k not in edited_db:
                 del db[k]
 
+    # Merge edited data back to master db
     for k, v in edited_db.items():
         if k == "NEW_KEY": continue 
         db[k] = v
 
+    # Save to original TOML file
     save_db(db)
-    os.remove(temp_path)
+    
+    # Clean up temp file
+    if os.path.exists(temp_path):
+        os.remove(temp_path)
+
+    # Trigger Git logic
+    git_sync(DB_FILE)
 
 if __name__ == "__main__":
     main()
