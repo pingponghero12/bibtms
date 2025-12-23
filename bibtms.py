@@ -82,6 +82,7 @@ def git_sync(file_path):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-o", "--open", action="store_true", help="Open raw bib.toml")
     parser.add_argument("--grep", help="Filter by string")
     parser.add_argument("--key", help="Open specific key")
     parser.add_argument("--add", action="store_true", help="Add new template")
@@ -89,7 +90,12 @@ def main():
 
     db = load_db()
     to_edit_keys = []
-    
+
+    if args.open:
+        subprocess.call([os.environ.get('EDITOR', 'nvim'), DB_FILE])
+        git_sync(DB_FILE)
+        return
+
     if args.add:
         to_edit_keys = []
     elif args.key:
