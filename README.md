@@ -1,6 +1,6 @@
-# bibtms: Simple Bibliography Manager
+# bibtms: Bibliography TUI Managment System
 
-A terminal tool to manage research papers using a single TOML file and Vim.
+A terminal tool to manage papers and books you read using a single TOML file and `vim`. Group your papers into status on reading, planning etc, by genres and easly grep them and edit them in `vim`.
 
 ### 1. Setup
 
