@@ -36,6 +36,7 @@ options:
   --grep GREP    Filter by string
   --key KEY      Open specific key
   --add          Add new template
+```
 
 ---
 
