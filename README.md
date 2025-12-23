@@ -51,13 +51,25 @@ options:
 ### 4. Data Example
 
 ```toml
-[Key2025]
-title = "Paper Title"
-rating = 8
-status = "Reading"
-genres = ["AI", "Math"]
+[Bengio2003]
+title = "A Neural Probabilistic Language Model"
+rating = 9
+abstract = "A classic paper that introduced neural word embeddings and the use of feed-forward neural networks for language modeling."
+status = "Completed"
+read_count = 2
+cited_in = ["DeepLearningReview"]
+url = "https://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf"
+genres = ["NLP", "Deep Learning", "Word Embeddings"]
+read_time = "90m"
 bibtex = """
-@article{Key2025, ... }
+@article{Bengio2003,
+  author = {Bengio, Yoshua and Ducharme, R{\\'e}jean and Vincent, Pascal and Jauvin, Christian},
+  title = {A Neural Probabilistic Language Model},
+  journal = {Journal of Machine Learning Research},
+  volume = {3},
+  pages = {1137--1155},
+  year = {2003}
+}
 """
 
 ```
