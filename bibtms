@@ -1,0 +1,18 @@
+#!/bin/bash
+CONFIG="$HOME/.config/bibtms/config.toml"
+# Extract path from config and expand ~ to full path
+DB_PATH=$(python3 -c "import os, tomlkit; print(os.path.expanduser(tomlkit.parse(open('$CONFIG').read())['bib_path']))")
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+if [[ "$1" == "-fzf" ]]; then
+    selected=$(python3 -c "import tomlkit; 
+db = tomlkit.parse(open('$DB_PATH').read()); 
+[print(f\"{v.get('title', 'No Title')} [{k}]\") for k, v in db.items()]" | fzf --header "Select Paper")
+
+    if [ -n "$selected" ]; then
+        key=$(echo "$selected" | sed 's/.*\[\(.*\)\].*/\1/')
+        python3 "$SCRIPT_DIR/bibtms.py" --key "$key"
+    fi
+else
+    python3 "$SCRIPT_DIR/bibtms.py" "$@"
+fi
